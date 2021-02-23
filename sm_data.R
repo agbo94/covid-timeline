@@ -10,6 +10,47 @@ library(rgdal)
 
 set.seed(1234)
 
+myQuantile <- function(a, quantileNum = 5, palname = "YlGn") {
+  probs <- seq(0, 1, length.out = quantileNum + 1)
+  bins <- quantile(a, probs, na.rm = TRUE, names = FALSE)
+  while (length(unique(bins)) != length(bins)) {
+    quantileNum <- quantileNum - 1
+    probs <- seq(0, 1, length.out = quantileNum + 1)
+    bins <- quantile(a, probs, na.rm = TRUE, names = FALSE)
+  }
+  pal <- colorBin(palname, bins = bins)
+  return(pal)
+}
+
+function (palette, domain, bins = 7, pretty = TRUE, na.color = "#808080", 
+          alpha = FALSE, reverse = FALSE, right = FALSE) 
+{
+  if (missing(domain) && length(bins) > 1) {
+    domain <- NULL
+  }
+  autobin <- is.null(domain) && length(bins) == 1
+  if (!is.null(domain)) 
+    bins <- getBins(domain, NULL, bins, pretty)
+  numColors <- if (length(bins) == 1) 
+    bins
+  else length(bins) - 1
+  colorFunc <- colorFactor(palette, domain = if (!autobin) 
+    1:numColors, na.color = na.color, alpha = alpha, reverse = reverse)
+  pf <- safePaletteFunc(palette, na.color, alpha)
+  withColorAttr("bin", list(bins = bins, na.color = na.color), 
+                function(x) {
+                  if (length(x) == 0 || all(is.na(x))) {
+                    return(pf(x))
+                  }
+                  binsToUse <- getBins(domain, x, bins, pretty)
+                  ints <- .bincode(x, binsToUse, include.lowest = TRUE, 
+                              right = right)
+                  if (any(is.na(x) != is.na(ints))) 
+                    warning("Some values were outside the color scale and will be treated as NA")
+                  colorFunc(ints)
+                })
+}
+
 dat<-read.csv("All_Info_Merged.csv") %>% mutate(Date =mdy(Date))
 dat$Types_EO <- as.factor(dat$Types_EO)
 
