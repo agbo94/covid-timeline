@@ -126,48 +126,55 @@ shinyServer(function(input, output, session) {
   observeEvent(event_data("plotly_click", source = "deaths"), {
     d = event_data("plotly_click", source = "deaths")
     cat("from death plot", d$x, '\n')
-    updateTextInput(session, "hidden", value = sprintf("deaths|%s", d$x))
+    
+    policy_txt = ""
+    if (d$curveNumber[1] == 2) {
+      x <- d$x[1]
+      tmp <- subset(dat, Date == x)
+      policy_txt = tmp$Details_1[1]
+    }
+    
+    updateTextInput(session, "hidden", value = sprintf("XXXdeaths|%s|%s", d$x, policy_txt))
+    
   })
 
   observeEvent(event_data("plotly_click", source = "cases"), {
     d = event_data("plotly_click", source = "cases")
-    cat(d$x, '\n')
-    updateTextInput(session, "hidden", value = sprintf("cases|%s", d$x))
-  })
-  
-  output$click <- renderText({
-    d <- event_data("plotly_click", "cases")
-    if (is.null(d))
-      return("Click on a event line to see the text")
+    cat("from casesh plot", d$x, '\n')
+    
+    policy_txt = ""
     if (d$curveNumber[1] == 2) {
       x <- d$x[1]
       tmp <- subset(dat, Date == x)
-      tmp$Details_1[1]
+      policy_txt = tmp$Details_1[1]
     }
-  })
-  output$click <- renderText({
-    d <- event_data("plotly_click", "deaths")
-    if (is.null(d))
-      return("Click on a event line to see the text")
-    if (d$curveNumber[1] == 2) {
-      x <- d$x[1]
-      tmp <- subset(dat, Date == x)
-      tmp$Details_1[1]
-    }
+    
+    updateTextInput(session, "hidden", value = sprintf("XXXcases|%s|%s", d$x, policy_txt))
   })
   
+  
+  output$click <- renderText({
+    clicked_info <- input$hidden
+    clicked_comps <- strsplit(clicked_info, "\\|")[[1]]
+    if (is.na(clicked_comps[3]) || is.null(clicked_comps[3]))
+      return("FOO")
+    else 
+      return(clicked_comps[3])
+  })
+  
+
   observeEvent(input$tabs, {
     val = input$hidden
     if (input$tabs == 'Deaths')
-      newval <- gsub("cases", "deaths", val)
+      newval <- gsub("XXXcases", "XXXdeaths", val)
     else 
-      newval <- gsub("deaths", "cases", val)
+      newval <- gsub("XXXdeaths", "XXXcases", val)
     updateTextInput(session, "hidden", value = newval)
   })
   
   
   output$map1 <- renderLeaflet({
-    cat("We're here\n")
+    cat("We're here for map1\n")
     clicked_info <- input$hidden
     clicked_comps <- strsplit(clicked_info, "\\|")[[1]]
     clicked_plot = clicked_comps[1]
@@ -179,13 +186,23 @@ shinyServer(function(input, output, session) {
     col_name <- sprintf("%s_%d_%s", mm, as.integer(date_comps[3]), date_comps[1])
     cat(col_name, '\n')
     
+    todays_idx = which(names(dat_cases) == col_name)
+    yesterday_idx = todays_idx - 1
+
+    
     if (clicked_plot == 'cases') {
       dat_to_use <- dat_cases
-      pal = colorQuantile("YlGn", jitter(dat_to_use[[col_name]]), n=5)
+      dat_to_use$pdat <- dat_cases[[todays_idx]] - dat_cases[[yesterday_idx]]
+      dat_to_use$pdat[ dat_to_use$pdat < 0] <- 0
+      pal = colorQuantile("YlGn",dat_to_use$pdat, n=5)
+      #pal <- myQuantile(dat_to_use$pdat, 5, "YlGn")
       #pal = colorBin("OrRd", jitter(dat_to_use[[col_name]]), bins=9)
     } else {
       dat_to_use <- dat_deaths
-      pal = colorQuantile("Reds", jitter(dat_to_use[[col_name]]), n=5)
+      dat_to_use$pdat <- dat_deaths[[todays_idx]] - dat_deaths[[yesterday_idx]]
+      dat_to_use$pdat[ dat_to_use$pdat < 0] <- 0
+      pal = colorQuantile("Reds", dat_to_use$pdat, n=5)
+      #pal <- myQuantile(dat_to_use$pdat, 5, "Reds")
       #pal = colorBin("Reds", jitter(dat_to_use[[col_name]]), bins=9)
     }
     if (!(col_name %in% names(dat_to_use))) 
@@ -195,9 +212,9 @@ shinyServer(function(input, output, session) {
       addEsriBasemapLayer(esriBasemapLayers$Gray) %>%
       setView(-72.699997, 41.599998, 8) %>%
       addPolygons(stroke=TRUE, weight=1, color='grey', fillOpacity = 0.8, 
-                  popup = paste0("<b>Town:</b> ",dat_to_use$TOWN, "<br>","<b>Total</b>: ", dat_to_use[[col_name]]),
-                  smoothFactor = 0.2, fillColor = pal(dat_to_use[[col_name]])) %>% 
-      addLegend(pal = pal, values = dat_to_use[[col_name]], opacity=1, title = col_name) 
+                  popup = paste0("<b>Town:</b> ",dat_to_use$TOWN, "<br>","<b>Total</b>: ", dat_to_use[["pdat"]]),
+                  smoothFactor = 0.2, fillColor = pal(dat_to_use[["pdat"]])) %>% 
+      addLegend(pal = pal, values = dat_to_use[["pdat"]], opacity=1, title = col_name) 
     m
   })
   
