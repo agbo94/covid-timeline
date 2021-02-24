@@ -19,10 +19,10 @@ source("sm_data.R")
 #   size = 14,
 #   color = 'black')
 
-tx <- list(
-  family = "Tahoma",
-  size = 12,
-  color = 'black')
+# tx <- list(
+#   family = "Tahoma",
+#   size = 12,
+#   color = 'black')
 
 death_label <- list(visible=TRUE, 
                     title=
@@ -54,8 +54,9 @@ shinyServer(function(input, output, session) {
    
     
     # make event lines
-    event_cols <- brewer.pal(n=5, 'Dark2')
+    event_cols <- c("#e60000", "#9966ff", "#ff9933", "#00cc00", "#00bfff")
     tmp <- dat %>% dplyr::filter(!is.na(dat$Types_EO))
+    
     event_lines <- lapply(1:nrow(tmp), function(i) {
       list(type = 'line', 
            line = list(color=event_cols[as.numeric(tmp$Types_EO[i])], 
@@ -66,11 +67,21 @@ shinyServer(function(input, output, session) {
     
     tmp_data <- tmp %>% mutate(dummy = max(dat$Daily_Deaths, na.rm=TRUE))
     p %>% 
+      # add_trace(type = 'scatter',
+      #           mode="markers",
+      #           x=~Date,
+      #           y=~dummy,
+      #           color=tmp$Types_EO,
+      #           text = paste(tmp$Types_EO, "<br>", tmp$Date),
+      #           hoverinfo = 'text',
+      #           data = tmp_data,
+      #           opacity=1,
+      #           showlegend=TRUE)%>%
       add_trace(type = 'bar', 
                 x=~Date, 
                 y=~dummy,
                 marker = list(color='black'),
-                text = tmp$Types_EO, 
+                text = paste0(tmp$Date,"<br>",tmp$Types_EO), 
                 hoverinfo = 'text', 
                 data = tmp_data,
                 opacity=0) %>%
@@ -113,7 +124,7 @@ shinyServer(function(input, output, session) {
                 x=~Date, 
                 y=~dummy,
                 marker = list(color='black'),
-                text = tmp$Types_EO, 
+                text = paste0(tmp$Date,"<br>",tmp$Types_EO), 
                 hoverinfo = 'text', 
                 data = tmp %>% mutate(dummy = max(dat$Daily_Cases)),
                 opacity=0) %>%
@@ -140,7 +151,7 @@ shinyServer(function(input, output, session) {
 
   observeEvent(event_data("plotly_click", source = "cases"), {
     d = event_data("plotly_click", source = "cases")
-    cat("from casesh plot", d$x, '\n')
+    cat("from cases plot", d$x, '\n')
     
     policy_txt = ""
     if (d$curveNumber[1] == 2) {
@@ -157,7 +168,7 @@ shinyServer(function(input, output, session) {
     clicked_info <- input$hidden
     clicked_comps <- strsplit(clicked_info, "\\|")[[1]]
     if (is.na(clicked_comps[3]) || is.null(clicked_comps[3]))
-      return("FOO")
+      return("Click on an event line to see the details.")
     else 
       return(clicked_comps[3])
   })
@@ -165,6 +176,7 @@ shinyServer(function(input, output, session) {
 
   observeEvent(input$tabs, {
     val = input$hidden
+    print(paste0("this is", val))
     if (input$tabs == 'Deaths')
       newval <- gsub("XXXcases", "XXXdeaths", val)
     else 
@@ -190,18 +202,20 @@ shinyServer(function(input, output, session) {
     yesterday_idx = todays_idx - 1
 
     
-    if (clicked_plot == 'cases') {
+    if (clicked_plot == 'XXXcases') {
       dat_to_use <- dat_cases
       dat_to_use$pdat <- dat_cases[[todays_idx]] - dat_cases[[yesterday_idx]]
       dat_to_use$pdat[ dat_to_use$pdat < 0] <- 0
-      pal = colorQuantile("YlGn",dat_to_use$pdat, n=5)
+      dat_to_use$pdat <- round(100*dat_to_use$pdat/sum(dat_to_use$pdat))
+      pal = colorNumeric("YlGn",dat_to_use$pdat, alpha = TRUE)
       #pal <- myQuantile(dat_to_use$pdat, 5, "YlGn")
       #pal = colorBin("OrRd", jitter(dat_to_use[[col_name]]), bins=9)
     } else {
       dat_to_use <- dat_deaths
       dat_to_use$pdat <- dat_deaths[[todays_idx]] - dat_deaths[[yesterday_idx]]
       dat_to_use$pdat[ dat_to_use$pdat < 0] <- 0
-      pal = colorQuantile("Reds", dat_to_use$pdat, n=5)
+      dat_to_use$pdat <- round(100*dat_to_use$pdat/sum(dat_to_use$pdat))
+      pal = colorNumeric("Reds",dat_to_use$pdat, alpha = TRUE)
       #pal <- myQuantile(dat_to_use$pdat, 5, "Reds")
       #pal = colorBin("Reds", jitter(dat_to_use[[col_name]]), bins=9)
     }
@@ -212,9 +226,9 @@ shinyServer(function(input, output, session) {
       addEsriBasemapLayer(esriBasemapLayers$Gray) %>%
       setView(-72.699997, 41.599998, 8) %>%
       addPolygons(stroke=TRUE, weight=1, color='grey', fillOpacity = 0.8, 
-                  popup = paste0("<b>Town:</b> ",dat_to_use$TOWN, "<br>","<b>Total</b>: ", dat_to_use[["pdat"]]),
+                  popup = paste0("<b>Town:</b> ",dat_to_use$TOWN, "<br>","<b>Percentage:</b> ", dat_to_use[["pdat"]]),
                   smoothFactor = 0.2, fillColor = pal(dat_to_use[["pdat"]])) %>% 
-      addLegend(pal = pal, values = dat_to_use[["pdat"]], opacity=1, title = col_name) 
+      addLegend(pal = pal, values = dat_to_use[["pdat"]], opacity=1, title = paste0(col_name, " (in %)")) 
     m
   })
   
