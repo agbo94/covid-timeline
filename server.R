@@ -128,7 +128,7 @@ shinyServer(function(input, output, session) {
     cat("from death plot", d$x, '\n')
     
     policy_txt = ""
-    if (d$curveNumber[1] == 2) {
+    if (d$pointNumber[1] %iN% c(0,1)) {
       x <- d$x[1]
       tmp <- subset(dat, Date == x)
       policy_txt = tmp$Details_1[1]
@@ -143,7 +143,7 @@ shinyServer(function(input, output, session) {
     cat("from cases plot", d$x, '\n')
     
     policy_txt = ""
-    if (d$curveNumber[1] == 2) {
+    if (d$pointNumber[1] %in% c(0,1)) {
       x <- d$x[1]
       tmp <- subset(dat, Date == x)
       policy_txt = tmp$Details_1[1]
