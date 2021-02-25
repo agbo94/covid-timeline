@@ -128,7 +128,11 @@ shinyServer(function(input, output, session) {
     cat("from death plot", d$x, '\n')
     
     policy_txt = ""
+<<<<<<< HEAD
     if (d$pointNumber[1] %in% c(0,1)) {
+=======
+    if (d$pointNumber[1] %iN% c(0,1)) {
+>>>>>>> c7d15c1d6096435a80515c691afb18071bb9049c
       x <- d$x[1]
       tmp <- subset(dat, Date == x)
       policy_txt = tmp$Details_1[1]
