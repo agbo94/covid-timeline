@@ -128,7 +128,7 @@ shinyServer(function(input, output, session) {
     cat("from death plot", d$x, '\n')
     
     policy_txt = ""
-    if (d$curveNumber[1] == 2) {
+    if (d$pointNumber[1] %in% c(0,1)) {
       x <- d$x[1]
       tmp <- subset(dat, Date == x)
       policy_txt = tmp$Details_1[1]
@@ -143,7 +143,7 @@ shinyServer(function(input, output, session) {
     cat("from cases plot", d$x, '\n')
     
     policy_txt = ""
-    if (d$curveNumber[1] == 2) {
+    if (d$pointNumber[1] %in% c(0,1)) {
       x <- d$x[1]
       tmp <- subset(dat, Date == x)
       policy_txt = tmp$Details_1[1]
@@ -157,9 +157,9 @@ shinyServer(function(input, output, session) {
     clicked_info <- input$hidden
     clicked_comps <- strsplit(clicked_info, "\\|")[[1]]
     if (is.na(clicked_comps[3]) || is.null(clicked_comps[3]))
-      return("Click on an event line to see the details.")
+      return("Click on an event dot to see the details.")
     else 
-      return(clicked_comps[3])
+      return(paste0(clicked_comps[2]," - ",clicked_comps[3]))
   })
   
   
@@ -187,9 +187,13 @@ shinyServer(function(input, output, session) {
     col_name <- sprintf("%s_%d_%s", mm, as.integer(date_comps[3]), date_comps[1])
     cat(col_name, '\n')
     
+    
+    if (col_name %in% names(dat_to_use)==TRUE){
+    
+    
     todays_idx = which(names(dat_cases) == col_name)
     yesterday_idx = todays_idx - 1
-    
+  
     
     if (clicked_plot == 'XXXcases') {
       dat_to_use <- dat_cases
@@ -216,8 +220,8 @@ shinyServer(function(input, output, session) {
       #pal <- myQuantile(dat_to_use$pdat, 5, "Reds")
       #pal = colorBin("Reds", jitter(dat_to_use[[col_name]]), bins=9)
     }
-    if (!(col_name %in% names(dat_to_use))) 
-      return(NULL)
+   
+    # if (col_name %in% names(dat_to_use)==TRUE){
     
     m <- leaflet(dat_to_use) %>%
       addEsriBasemapLayer(esriBasemapLayers$Gray) %>%
@@ -227,6 +231,17 @@ shinyServer(function(input, output, session) {
                   smoothFactor = 0.2, fillColor = pal(dat_to_use[["pdat"]])) %>% 
       addLegend(pal = pal, values = dat_to_use[["pdat"]], opacity=1, title = paste0(col_name, " (in %)")) 
     m
+    
+    }else{
+      m <- leaflet(dat_cases) %>%
+        addEsriBasemapLayer(esriBasemapLayers$Gray) %>%
+        setView(-72.699997, 41.599998, 8) %>%
+        addPolygons(stroke=TRUE, weight=1, color='grey', fillOpacity = 0.8) %>%
+        addLegend(labels="No Town Data Available Before March 21", title="", col="grey")
+    
+      m
+      
+    }
   })
   
   
