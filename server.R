@@ -27,12 +27,12 @@ source("sm_data.R")
 death_label <- list(visible=TRUE, 
                     title=
                       list(text = "Daily Deaths"
-                           ))
+                      ))
 
 case_label <- list(visible=TRUE, 
-                    title=
-                      list(text = "Daily Cases"
-                           ))
+                   title=
+                     list(text = "Daily Cases"
+                     ))
 
 
 shinyServer(function(input, output, session) {
@@ -51,43 +51,31 @@ shinyServer(function(input, output, session) {
                 marker=list(color='lightgrey', width=1)) %>% 
       add_lines(x=~Date, y=~Daily_Deaths_ma, hoverinfo = "none") %>% 
       layout(showlegend = FALSE, yaxis=death_label)
-   
+    
     
     # make event lines
-    event_cols <- c("#e60000", "#9966ff", "#ff9933", "#00cc00", "#00bfff")
+    event_cols <- c('#a17403', '#187818', '#3b403b','#8a0303', '#363ed9')
     tmp <- dat %>% dplyr::filter(!is.na(dat$Types_EO))
-    
-    event_lines <- lapply(1:nrow(tmp), function(i) {
-      list(type = 'line', 
-           line = list(color=event_cols[as.numeric(tmp$Types_EO[i])], 
-                       dash='dash',  width=1),
-           opacity = 1, x0=tmp$Date[i], x1=tmp$Date[i], 
-           xref='x', y0=0.05, y1=1, yref='paper')
-    })
-    
-    tmp_data <- tmp %>% mutate(dummy = max(dat$Daily_Deaths, na.rm=TRUE))
+    tmp_data <- tmp %>% mutate(dummy = max(dat$Daily_Deaths, na.rm=TRUE),
+                               dummy2 = max(dat$Daily_Deaths, na.rm=TRUE) * 1.03)
+    for (i in 1:nrow(tmp_data)) {
+      line_color <- event_cols[as.numeric(tmp_data$Types_EO[i])]
+      p <- p %>% 
+        add_segments(x = tmp_data$Date[i], y=0, 
+                     xend=tmp_data$Date[i], yend=tmp_data$dummy[1],
+                     text = paste0(tmp_data$Date[i],"<br>",tmp_data$Types_EO[i]), 
+                     hoverinfo = 'text',
+                     opacity=0.75,
+                     line=list(color=line_color, dash='dash', width=1))
+      p <- p %>% 
+        add_markers(x = tmp_data$Date[i], y = tmp_data$dummy2[i], 
+                    text = paste0(tmp_data$Date[i],"<br>",tmp_data$Types_EO[i]), 
+                    hoverinfo = 'text', 
+                    type='scatter', mode='markers', marker = list(color=line_color))
+    }
     p %>% 
-      # add_trace(type = 'scatter',
-      #           mode="markers",
-      #           x=~Date,
-      #           y=~dummy,
-      #           color=tmp$Types_EO,
-      #           text = paste(tmp$Types_EO, "<br>", tmp$Date),
-      #           hoverinfo = 'text',
-      #           data = tmp_data,
-      #           opacity=1,
-      #           showlegend=TRUE)%>%
-      add_trace(type = 'bar', 
-                x=~Date, 
-                y=~dummy,
-                marker = list(color='black'),
-                text = paste0(tmp$Date,"<br>",tmp$Types_EO), 
-                hoverinfo = 'text', 
-                data = tmp_data,
-                opacity=0) %>%
-      layout(shapes = event_lines, 
-             xaxis = list(title=""), showlegend=FALSE) %>% 
       event_register("plotly_click")
+    
   })
   
   
@@ -109,29 +97,30 @@ shinyServer(function(input, output, session) {
       layout(showlegend = FALSE, yaxis=case_label)
     
     # make event lines
-    event_cols <- brewer.pal(n=5, 'Dark2')
+    event_cols <- c('#a17403', '#187818', '#3b403b','#8a0303', '#363ed9')
     tmp <- dat %>% dplyr::filter(!is.na(dat$Types_EO))
-    event_lines <- lapply(1:nrow(tmp), function(i) {
-      list(type = 'line', 
-           line = list(color=event_cols[as.numeric(tmp$Types_EO[i])], 
-                       dash='dash',  width=1),
-           opacity = 1, x0=tmp$Date[i], x1=tmp$Date[i], 
-           xref='x', y0=0.05, y1=1, yref='paper')
-    })
-    
+    tmp_data <- tmp %>% mutate(dummy = max(dat$Daily_Cases, na.rm=TRUE),
+                               dummy2 = max(dat$Daily_Cases, na.rm=TRUE) * 1.03)
+    for (i in 1:nrow(tmp_data)) {
+      line_color <- event_cols[as.numeric(tmp_data$Types_EO[i])]
+      p <- p %>% 
+        add_segments(x = tmp_data$Date[i], y=0, 
+                     xend=tmp_data$Date[i], yend=tmp_data$dummy[1],
+                     text = paste0(tmp_data$Date[i],"<br>",tmp_data$Types_EO[i]), 
+                     hoverinfo = 'text',
+                     opacity=0.75,
+                     line=list(color=line_color, dash='dash', width=1))
+      p <- p %>% 
+        add_markers(x = tmp_data$Date[i], y = tmp_data$dummy2[i], 
+                    text = paste0(tmp_data$Date[i],"<br>",tmp_data$Types_EO[i]), 
+                    hoverinfo = 'text', 
+                    type='scatter', mode='markers', marker = list(color=line_color))
+    }
     p %>% 
-      add_trace(type = 'bar', 
-                x=~Date, 
-                y=~dummy,
-                marker = list(color='black'),
-                text = paste0(tmp$Date,"<br>",tmp$Types_EO), 
-                hoverinfo = 'text', 
-                data = tmp %>% mutate(dummy = max(dat$Daily_Cases)),
-                opacity=0) %>%
-      layout(shapes = event_lines, 
-             xaxis = list(title="")) %>% 
       event_register("plotly_click")
-    })
+    
+    
+  })
   
   
   observeEvent(event_data("plotly_click", source = "deaths"), {
@@ -148,7 +137,7 @@ shinyServer(function(input, output, session) {
     updateTextInput(session, "hidden", value = sprintf("XXXdeaths|%s|%s", d$x, policy_txt))
     
   })
-
+  
   observeEvent(event_data("plotly_click", source = "cases"), {
     d = event_data("plotly_click", source = "cases")
     cat("from cases plot", d$x, '\n')
@@ -173,7 +162,7 @@ shinyServer(function(input, output, session) {
       return(clicked_comps[3])
   })
   
-
+  
   observeEvent(input$tabs, {
     val = input$hidden
     print(paste0("this is", val))
@@ -200,13 +189,17 @@ shinyServer(function(input, output, session) {
     
     todays_idx = which(names(dat_cases) == col_name)
     yesterday_idx = todays_idx - 1
-
+    
     
     if (clicked_plot == 'XXXcases') {
       dat_to_use <- dat_cases
       dat_to_use$pdat <- dat_cases[[todays_idx]] - dat_cases[[yesterday_idx]]
       dat_to_use$pdat[ dat_to_use$pdat < 0] <- 0
-      dat_to_use$pdat <- round(100*dat_to_use$pdat/sum(dat_to_use$pdat))
+      
+      if (!all(dat_to_use$pdat == 0)) {
+        dat_to_use$pdat <- round(100*dat_to_use$pdat/sum(dat_to_use$pdat))
+      }
+      
       pal = colorNumeric("YlGn",dat_to_use$pdat, alpha = TRUE)
       #pal <- myQuantile(dat_to_use$pdat, 5, "YlGn")
       #pal = colorBin("OrRd", jitter(dat_to_use[[col_name]]), bins=9)
@@ -214,7 +207,11 @@ shinyServer(function(input, output, session) {
       dat_to_use <- dat_deaths
       dat_to_use$pdat <- dat_deaths[[todays_idx]] - dat_deaths[[yesterday_idx]]
       dat_to_use$pdat[ dat_to_use$pdat < 0] <- 0
-      dat_to_use$pdat <- round(100*dat_to_use$pdat/sum(dat_to_use$pdat))
+      
+      if (!all(dat_to_use$pdat == 0)) {
+        dat_to_use$pdat <- round(100*dat_to_use$pdat/sum(dat_to_use$pdat))
+      }
+      
       pal = colorNumeric("Reds",dat_to_use$pdat, alpha = TRUE)
       #pal <- myQuantile(dat_to_use$pdat, 5, "Reds")
       #pal = colorBin("Reds", jitter(dat_to_use[[col_name]]), bins=9)
