@@ -53,7 +53,7 @@ body <- dashboardBody(
                 title=("About this Page and Visualization"),
                 "This timeline shows the major COVID-19 infection control measures, re-openings, and vaccination roll-out undertaken by the state of Connecticut after the first COVID-19 case appeared on March 6th, 2020 and the first executive order of ‘STATE EMERGENCY’ declared on March 10th, 2020. 
                 Along with the timeline of policy decisions", tags$b("we have a graph of daily cases, and maps of daily cases and deaths "), "over the same time period. 
-                The dotted lines indicate key policy decisions –" , tags$b("restrictions/closings (in red), openings (in green), interventions (in orange), vaccination (in blue) and other (in black)"),". 
+                The dotted lines indicate key policy decisions –" , tags$b("restrictions/closings (in red), openings (in green), interventions (in yellow), vaccination (in blue) and other (in black)"),". 
                 Clicking on a line will display", tags$em("Policy Details"), "below the chart. 
                 Additionally, the control buttons on top of the timeline allow users to sift through key events by day, allowing them to be viewed in chronological order. 
                 The timeline can be viewed against either new cases or new deaths. 
