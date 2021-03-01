@@ -92,29 +92,30 @@ shinyServer(function(input, output, session) {
                              dat$Daily_Cases, "Cases<br><i>", 
                              dat$Daily_Cases_cum, "Cumulative cases</i>" ),
                 hoverinfo = "text",
-                marker=list(color='lightgrey', width=1)) %>% 
-      add_lines(x=~Date, y=~Daily_Cases_ma, hoverinfo = "none") %>% 
+                marker=list(color='lightgrey', width=1), showlegend=F) %>% 
+      add_lines(x=~Date, y=~Daily_Cases_ma, hoverinfo = "none", showlegend=F) %>% 
       layout(showlegend = FALSE, yaxis=case_label)
-    
+    # 
     # make event lines
     event_cols <- c('#a17403', '#187818', '#3b403b','#8a0303', '#363ed9')
     tmp <- dat %>% dplyr::filter(!is.na(dat$Types_EO))
     tmp_data <- tmp %>% mutate(dummy = max(dat$Daily_Cases, na.rm=TRUE),
                                dummy2 = max(dat$Daily_Cases, na.rm=TRUE) * 1.03)
     for (i in 1:nrow(tmp_data)) {
-      line_color <- event_cols[as.numeric(tmp_data$Types_EO[i])]
+      line_color <- event_cols[as.factor(tmp_data$Types_EO[i])]
       p <- p %>% 
         add_segments(x = tmp_data$Date[i], y=0, 
                      xend=tmp_data$Date[i], yend=tmp_data$dummy[1],
                      text = paste0(tmp_data$Date[i],"<br>",tmp_data$Types_EO[i]), 
                      hoverinfo = 'text',
                      opacity=0.75,
-                     line=list(color=line_color, dash='dash', width=1))
+                     line=list(color=line_color, dash='dash', width=1), showlegend=F)
       p <- p %>% 
         add_markers(x = tmp_data$Date[i], y = tmp_data$dummy2[i], 
                     text = paste0(tmp_data$Date[i],"<br>",tmp_data$Types_EO[i]), 
                     hoverinfo = 'text', 
-                    type='scatter', mode='markers', marker = list(color=line_color))
+                    type='scatter', mode='markers', marker = list(color=line_color), 
+                    showlegend=F)
     }
     p %>% 
       event_register("plotly_click")
@@ -157,9 +158,14 @@ shinyServer(function(input, output, session) {
     clicked_info <- input$hidden
     clicked_comps <- strsplit(clicked_info, "\\|")[[1]]
     if (is.na(clicked_comps[3]) || is.null(clicked_comps[3]))
-      return("Click on an event dot to see the details.")
+      return("Click on an event point to see the details.")
     else 
-      return(paste0(clicked_comps[2]," - ",clicked_comps[3]))
+      date<-strptime(clicked_comps[2], "%Y-%m-%d")
+    datenice <- format(date, "%B %d, %Y")
+      return(paste0(datenice,
+                    "\n",
+                    clicked_comps[3], 
+                    sep="\n"))
   })
   
   
@@ -172,24 +178,26 @@ shinyServer(function(input, output, session) {
       newval <- gsub("XXXdeaths", "XXXcases", val)
     updateTextInput(session, "hidden", value = newval)
   })
-  
+
+
   
   output$map1 <- renderLeaflet({
     cat("We're here for map1\n")
+    
     clicked_info <- input$hidden
     clicked_comps <- strsplit(clicked_info, "\\|")[[1]]
     clicked_plot = clicked_comps[1]
     clicked_date = clicked_comps[2]
     
     date_comps <- strsplit(clicked_date, "-")[[1]]
+    
     if (length(date_comps) != 3) return(NULL)
+    
     mm <- month.name[as.integer(date_comps[2])]
     col_name <- sprintf("%s_%d_%s", mm, as.integer(date_comps[3]), date_comps[1])
     cat(col_name, '\n')
     
-    
     if (col_name %in% names(dat_cases)==TRUE){
-    
     
     todays_idx = which(names(dat_cases) == col_name)
     yesterday_idx = todays_idx - 1
@@ -223,13 +231,17 @@ shinyServer(function(input, output, session) {
    
     # if (col_name %in% names(dat_to_use)==TRUE){
     
+    legdate<-strptime(col_name, "%B_%d_%Y")
+    legdatenice <- format(legdate, "%b/%d/%Y")
+    
     m <- leaflet(dat_to_use) %>%
       addEsriBasemapLayer(esriBasemapLayers$Gray) %>%
       setView(-72.699997, 41.599998, 8) %>%
       addPolygons(stroke=TRUE, weight=1, color='grey', fillOpacity = 0.8, 
                   popup = paste0("<b>Town:</b> ",dat_to_use$TOWN, "<br>","<b>Percentage:</b> ", dat_to_use[["pdat"]]),
                   smoothFactor = 0.2, fillColor = pal(dat_to_use[["pdat"]])) %>% 
-      addLegend(pal = pal, values = dat_to_use[["pdat"]], opacity=1, title = paste0(col_name, " (in %)")) 
+      addLegend(pal = pal, values = dat_to_use[["pdat"]], opacity=1, 
+                title = paste0(legdatenice,"<br>","<center>" ,"(in %)")) 
     m
     
     }else{
@@ -237,13 +249,14 @@ shinyServer(function(input, output, session) {
         addEsriBasemapLayer(esriBasemapLayers$Gray) %>%
         setView(-72.699997, 41.599998, 8) %>%
         addPolygons(stroke=TRUE, weight=1, color='grey', fillOpacity = 0.8) %>%
-        addLegend(labels="No Town Data Available Before March 21", title="", col="grey")
+        addLegend(labels="No Data Available", title="", col="grey")
     
       m
       
     }
   })
   
-  
+session$onSessionEnded(stopApp)
+
 })
 
