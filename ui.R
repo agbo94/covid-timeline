@@ -19,6 +19,7 @@ library(shinythemes)
 
 
 body <- dashboardBody(
+    
     fluidPage(
         theme=shinytheme("yeti"),
         useShinyjs(), 
@@ -35,7 +36,7 @@ body <- dashboardBody(
                             tabPanel("Cases", id='Cases', plotlyOutput("casesplot")),
                             tabPanel("Deaths", id='Deaths', plotlyOutput("deathsplot")))
             ),
-            box(
+            box(title=("Map"),
                 leafletOutput("map1", height = 442)
             )
         ),
@@ -63,7 +64,7 @@ body <- dashboardBody(
                 fill = FALSE,
                 solidHeader = T
             )
-        ),
+        )
     )
 )
 
