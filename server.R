@@ -198,12 +198,13 @@ shinyServer(function(input, output, session) {
     cat(col_name, '\n')
     
     if (col_name %in% names(dat_cases)==TRUE){
-    
-    todays_idx = which(names(dat_cases) == col_name)
-    yesterday_idx = todays_idx - 1
-  
+      
     
     if (clicked_plot == 'XXXcases') {
+      
+      todays_idx = which(names(dat_cases) == col_name)
+      yesterday_idx = todays_idx - 1
+      
       dat_to_use <- dat_cases
       dat_to_use$pdat <- dat_cases[[todays_idx]] - dat_cases[[yesterday_idx]]
       dat_to_use$pdat[ dat_to_use$pdat < 0] <- 0
@@ -216,6 +217,10 @@ shinyServer(function(input, output, session) {
       #pal <- myQuantile(dat_to_use$pdat, 5, "YlGn")
       #pal = colorBin("OrRd", jitter(dat_to_use[[col_name]]), bins=9)
     } else {
+      
+      todays_idx = which(names(dat_deaths) == col_name)
+      yesterday_idx = todays_idx - 1
+      
       dat_to_use <- dat_deaths
       dat_to_use$pdat <- dat_deaths[[todays_idx]] - dat_deaths[[yesterday_idx]]
       dat_to_use$pdat[ dat_to_use$pdat < 0] <- 0
