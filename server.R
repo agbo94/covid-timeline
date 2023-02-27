@@ -50,7 +50,9 @@ shinyServer(function(input, output, session) {
                 hoverinfo = "text",
                 marker=list(color='lightgrey', width=1)) %>% 
       add_lines(x=~Date, y=~Daily_Deaths_ma, hoverinfo = "none") %>% 
-      layout(showlegend = FALSE, yaxis=death_label)
+      layout(showlegend = FALSE, yaxis=death_label,
+            xaxis = list(
+        rangeslider = list(type = "date")))
     
     
     # make event lines
@@ -94,7 +96,8 @@ shinyServer(function(input, output, session) {
                 hoverinfo = "text",
                 marker=list(color='lightgrey', width=1), showlegend=F) %>% 
       add_lines(x=~Date, y=~Daily_Cases_ma, hoverinfo = "none", showlegend=F) %>% 
-      layout(showlegend = FALSE, yaxis=case_label)
+      layout(showlegend = FALSE, yaxis=case_label, xaxis = list(
+        rangeslider = list(type = "date")))
     # 
     # make event lines
     event_cols <- c('#a17403', '#187818', '#3b403b','#8a0303', '#363ed9')
